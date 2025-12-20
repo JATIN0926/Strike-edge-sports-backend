@@ -60,3 +60,19 @@ export const googleAuth = async (req, res) => {
     res.status(500).json({ message: "Google authentication failed" });
   }
 };
+
+export const logout = async (req, res) => {
+  try {
+    res
+      .clearCookie("token", {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+      })
+      .status(200)
+      .json({ message: "Logged out successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Logout failed" });
+  }
+};

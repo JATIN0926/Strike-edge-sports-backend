@@ -3,7 +3,11 @@ import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./src/config/db.js";
 import cookieParser from "cookie-parser";
-import authRoutes from "./src/routes/auth.routes.js";;
+import authRoutes from "./src/routes/auth.routes.js";
+import userRoutes from "./src/routes/user.routes.js";
+import categoryRoutes from "./src/routes/category.route.js";
+import productRoutes from "./src/routes/product.route.js";
+
 dotenv.config();
 
 const app = express();
@@ -23,10 +27,13 @@ app.use(express.urlencoded({ limit: "1mb", extended: true }));
 app.use(cookieParser());
 
 app.get("/", (req, res) => {
-res.send("Welcome to the Anjali Blogs API !!");
+res.send("Welcome to the Strike Edge Sports API !!");
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/user", userRoutes);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/products", productRoutes);
 
 
 const PORT = process.env.PORT || 5000;

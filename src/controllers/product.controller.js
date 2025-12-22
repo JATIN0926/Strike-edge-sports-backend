@@ -1,6 +1,7 @@
 import Product from "../models/product.model.js";
 import slugify from "slugify";
 import cloudinary from "../config/cloudinary.js";
+import categoryModel from "../models/category.model.js";
 
 export const addProduct = async (req, res) => {
   try {
@@ -63,49 +64,77 @@ export const deleteCloudinaryImage = async (req, res) => {
       return res.status(400).json({ message: "Public ID required" });
     }
 
-    const res = await cloudinary.uploader.destroy(publicId);
+    const result = await cloudinary.uploader.destroy(publicId);
 
-    res.status(201).json({ message: "Image deleted from Cloudinary" });
+    return res.status(200).json({
+      message: "Image deleted from Cloudinary",
+      result,
+    });
   } catch (err) {
-    console.log(err);
-    res.status(500).json({ message: "Cloudinary delete failed" });
+    console.error(err);
+    return res.status(500).json({ message: "Cloudinary delete failed" });
   }
 };
 
 export const getAllProducts = async (req, res) => {
   try {
-    const { search } = req.query;
+    const {
+      page = 1,
+      limit = 6,
+      search = "",
+      sort = "latest",
+      type = "all",
+      category = "all",
+    } = req.query;
 
-    let query = {};
+    const numericLimit = Number(limit);
+    const skip = (Number(page) - 1) * numericLimit;
 
+    let query = { isActive: true };
+
+    /* 🔍 Search */
     if (search) {
       const regex = new RegExp(search, "i");
+      query.$or = [{ title: regex }, { grade: regex }];
+    }
 
-      query.$or = [{ title: regex }, { grade: regex }, { productType: regex }];
+    /* 🏏 Product Type */
+    if (type !== "all") {
+      query.productType = type;
+    }
+
+    /* 📂 Category */
+    if (category !== "all") {
+      query.category = category; // ObjectId
+    }
+
+    /* ↕ Sorting */
+    let sortQuery = {};
+    switch (sort) {
+      case "price-asc":
+        sortQuery.price = 1;
+        break;
+      case "price-desc":
+        sortQuery.price = -1;
+        break;
+      case "popular":
+        sortQuery.soldCount = -1;
+        break;
+      default:
+        sortQuery.createdAt = -1;
     }
 
     const products = await Product.find(query)
-      .populate({
-        path: "category",
-        select: "name",
-        match: search ? { name: new RegExp(search, "i") } : {},
-      })
-      .sort({ createdAt: -1 });
+      .populate("category", "name")
+      .sort(sortQuery)
+      .skip(skip)
+      .limit(numericLimit);
 
-    // 🔥 remove products whose category didn't match search
-    const filteredProducts = search
-      ? products.filter(
-          (p) =>
-            p.category || // matched category
-            p.title.toLowerCase().includes(search.toLowerCase()) ||
-            p.grade.toLowerCase().includes(search.toLowerCase()) ||
-            p.productType.toLowerCase().includes(search.toLowerCase())
-        )
-      : products;
+    const total = await Product.countDocuments(query);
 
-    res.json(filteredProducts);
+    res.status(200).json({ products, total });
   } catch (err) {
-    console.error("SEARCH PRODUCTS ERROR:", err);
+    console.error(err);
     res.status(500).json({ message: "Failed to fetch products" });
   }
 };
@@ -156,6 +185,53 @@ export const getProductById = async (req, res) => {
   } catch (err) {
     console.error("GET PRODUCT ERROR:", err);
     res.status(500).json({ message: "Failed to fetch product" });
+  }
+};
+
+export const getProductByIdPublic = async (req, res) => {
+  try {
+    const product = await Product.findOne({
+      _id: req.params.id,
+      isActive: true,
+    }).populate("category", "name");
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    res.status(200).json(product);
+  } catch (err) {
+    console.error("GET PRODUCT PUBLIC ERROR:", err);
+    res.status(500).json({ message: "Failed to fetch product" });
+  }
+};
+
+export const getRelatedProducts = async (req, res) => {
+  try {
+    const { productId } = req.params;
+
+    const currentProduct = await Product.findById(productId);
+
+    if (!currentProduct) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    const relatedProducts = await Product.find({
+      _id: { $ne: productId },
+      isActive: true,
+      $or: [
+        { category: currentProduct.category },
+        { productType: currentProduct.productType },
+      ],
+    })
+      .populate("category", "name")
+      .sort({ createdAt: -1 })
+      .limit(3);
+
+    res.status(200).json(relatedProducts);
+  } catch (err) {
+    console.error("RELATED PRODUCTS ERROR:", err);
+    res.status(500).json({ message: "Failed to fetch related products" });
   }
 };
 
@@ -211,3 +287,45 @@ export const updateProduct = async (req, res) => {
     res.status(500).json({ message: "Failed to update product" });
   }
 };
+
+export const getProductsByCategorySlug = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { limit = 6, type = "all" } = req.query;
+
+    // 1️⃣ Find category by slug
+    const category = await categoryModel.findOne({
+      slug,
+      isActive: true,
+    });
+
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
+    // 2️⃣ Build query
+    let query = {
+      category: category._id,
+      isActive: true,
+    };
+
+    if (type !== "all") {
+      query.productType = type;
+    }
+
+    // 3️⃣ Fetch products
+    const products = await Product.find(query)
+      .populate("category", "name slug")
+      .sort({ createdAt: -1 })
+      .limit(Number(limit));
+
+    res.status(200).json({
+      category,
+      products,
+    });
+  } catch (err) {
+    console.error("CATEGORY SLUG PRODUCTS ERROR:", err);
+    res.status(500).json({ message: "Failed to fetch products" });
+  }
+};
+

@@ -4,7 +4,9 @@ import {
   deleteCloudinaryImage,
   deleteProduct,
   getAllProducts,
-  getProductById,
+  getProductByIdPublic,
+  getProductsByCategorySlug,
+  getRelatedProducts,
   updateProduct,
 } from "../controllers/product.controller.js";
 import { isAdmin, protect } from "../middleware/auth.middleware.js";
@@ -13,9 +15,11 @@ const router = express.Router();
 
 router.post("/", protect, isAdmin, addProduct);
 router.delete("/cloudinary", protect, isAdmin, deleteCloudinaryImage);
-router.get("/", protect, isAdmin, getAllProducts);
+router.get("/", protect, getAllProducts);
+router.get("/:id", getProductByIdPublic);
+router.get("/:productId/related", getRelatedProducts);
 router.delete("/:id", protect, isAdmin, deleteProduct);
-router.get("/:id", protect, isAdmin, getProductById); 
+router.get("/category/:slug", getProductsByCategorySlug);
 router.put("/:id", protect, isAdmin, updateProduct);
 
 export default router;

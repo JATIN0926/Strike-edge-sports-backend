@@ -1,0 +1,220 @@
+import Order from "../models/order.model.js";
+import Product from "../models/product.model.js";
+
+/* ================= CREATE ORDER ================= */
+export const createOrder = async (req, res) => {
+  try {
+    const {
+      items,
+      shippingAddress,
+      paymentMethod,
+      subtotal,
+      deliveryCharge,
+      totalAmount,
+    } = req.body;
+
+    if (!items?.length) {
+      return res.status(400).json({ message: "Cart is empty" });
+    }
+
+    if (!shippingAddress) {
+      return res.status(400).json({ message: "Shipping address required" });
+    }
+
+    if (!paymentMethod) {
+      return res.status(400).json({ message: "Payment method required" });
+    }
+
+    for (const item of items) {
+      const product = await Product.findById(item.productId);
+
+      if (!product) {
+        return res
+          .status(404)
+          .json({ message: `Product not found: ${item.title}` });
+      }
+
+      if (product.stock < item.quantity) {
+        return res.status(400).json({
+          message: `Insufficient stock for ${product.title}`,
+        });
+      }
+    }
+
+    const order = await Order.create({
+      user: req.user._id,
+      items,
+      shippingAddress,
+      paymentMethod,
+      paymentStatus: paymentMethod === "COD" ? "PENDING" : "PAID",
+      subtotal,
+      deliveryCharge,
+      totalAmount,
+    });
+
+    /* ---------- Reduce Stock ---------- */
+    for (const item of items) {
+      await Product.findByIdAndUpdate(item.productId, {
+        $inc: {
+          stock: -item.quantity,
+          soldCount: item.quantity,
+        },
+      });
+    }
+
+    res.status(201).json({
+      message: "Order placed successfully",
+      order,
+    });
+  } catch (err) {
+    console.error("CREATE ORDER ERROR:", err);
+    res.status(500).json({ message: "Failed to create order" });
+  }
+};
+
+export const getAllOrders = async (req, res) => {
+  try {
+    const { page = 1, limit = 6, search = "" } = req.query;
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    let query = {};
+
+    /* 🔍 SEARCH */
+    if (search) {
+      const regex = new RegExp(search, "i");
+
+      query.$or = [{ orderId: regex }, { "shippingAddress.phone": regex }];
+    }
+
+    const orders = await Order.find(query)
+      .populate("user", "name email")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit));
+
+    const total = await Order.countDocuments(query);
+
+    res.status(200).json({
+      orders,
+      total,
+      page: Number(page),
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (err) {
+    console.error("GET ORDERS ERROR:", err);
+    res.status(500).json({ message: "Failed to fetch orders" });
+  }
+};
+
+export const updateOrderStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const { id } = req.params;
+
+    const allowedStatuses = [
+      "PLACED",
+      "CONFIRMED",
+      "SHIPPED",
+      "DELIVERED",
+      "CANCELLED",
+    ];
+
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid order status" });
+    }
+
+    const order = await Order.findById(id);
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const previousStatus = order.orderStatus;
+
+    if (previousStatus === "DELIVERED" && status === "CANCELLED") {
+      return res.status(400).json({
+        message: "Delivered orders cannot be cancelled",
+      });
+    }
+
+    /* 🔁 ROLLBACK STOCK IF CANCELLED */
+    if (status === "CANCELLED" && previousStatus !== "CANCELLED") {
+      for (const item of order.items) {
+        await Product.findByIdAndUpdate(item.productId, {
+          $inc: {
+            stock: item.quantity,
+            soldCount: -item.quantity,
+          },
+        });
+      }
+    }
+
+    order.orderStatus = status;
+    await order.save();
+
+    res.status(200).json({
+      message: "Order status updated successfully",
+      order,
+    });
+  } catch (err) {
+    console.error("UPDATE ORDER STATUS ERROR:", err);
+    res.status(500).json({ message: "Failed to update order status" });
+  }
+};
+export const getMyOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({ user: req.user._id }).sort({
+      createdAt: -1,
+    });
+
+    res.status(200).json({ orders });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch orders" });
+  }
+};
+
+export const cancelOrderByUser = async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const { id } = req.params;
+
+    const order = await Order.findOne({
+      _id: id,
+      user: req.user._id,
+    });
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    if (["SHIPPED", "DELIVERED", "CANCELLED"].includes(order.orderStatus)) {
+      return res.status(400).json({
+        message: "Order cannot be cancelled at this stage",
+      });
+    }
+
+    // rollback stock
+    for (const item of order.items) {
+      await Product.findByIdAndUpdate(item.productId, {
+        $inc: {
+          stock: item.quantity,
+          soldCount: -item.quantity,
+        },
+      });
+    }
+
+    order.orderStatus = "CANCELLED";
+    order.cancellationReason = reason || "";
+    order.cancelledBy = "USER";
+
+    await order.save();
+
+    res.status(200).json({
+      message: "Order cancelled successfully",
+      order,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to cancel order" });
+  }
+};

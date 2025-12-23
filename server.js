@@ -13,13 +13,15 @@ dotenv.config();
 
 const app = express();
 
+app.set("trust proxy", 1);
+
 app.use(
-cors({
-origin: process.env.CLIENT_URL,
-credentials: true,
-// methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-// allowedHeaders: ["Content-Type", "Authorization"],
-})
+  cors({
+    origin: process.env.CLIENT_URL,
+    credentials: true,
+    // methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    // allowedHeaders: ["Content-Type", "Authorization"],
+  })
 );
 
 app.use(express.json({ limit: "1mb" }));
@@ -28,7 +30,7 @@ app.use(express.urlencoded({ limit: "1mb", extended: true }));
 app.use(cookieParser());
 
 app.get("/", (req, res) => {
-res.send("Welcome to the Strike Edge Sports API !!");
+  res.send("Welcome to the Strike Edge Sports API !!");
 });
 
 app.use("/api/auth", authRoutes);
@@ -37,20 +39,19 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 
-
 const PORT = process.env.PORT || 5000;
 
 connectDB()
-.then(() => {
-app.on("error", (error) => {
-    console.log(error);
-    throw error;
-});
+  .then(() => {
+    app.on("error", (error) => {
+      console.log(error);
+      throw error;
+    });
 
-app.listen(PORT, () => {
-    console.log(`Server is running at port: ${PORT}`);
-});
-})
-.catch((err) => {
-console.log("MongoDB connection failed:", err);
-});
+    app.listen(PORT, () => {
+      console.log(`Server is running at port: ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.log("MongoDB connection failed:", err);
+  });

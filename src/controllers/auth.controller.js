@@ -41,7 +41,7 @@ export const googleAuth = async (req, res) => {
       .cookie("token", jwtToken, {
         httpOnly: true,
         secure: true,
-        sameSite: "strict",
+        sameSite: "none",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       })
       .status(200)
@@ -67,7 +67,7 @@ export const logout = async (req, res) => {
       .clearCookie("token", {
         httpOnly: true,
         secure: true,
-        sameSite: "strict",
+        sameSite: "none",
       })
       .status(200)
       .json({ message: "Logged out successfully" });

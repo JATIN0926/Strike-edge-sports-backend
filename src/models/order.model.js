@@ -75,21 +75,9 @@ const orderSchema = new mongoose.Schema(
       required: true,
     },
 
-    paymentStatus: {
-      type: String,
-      enum: ["PENDING", "PAID", "FAILED"],
-      default: "PENDING",
-    },
-
     orderStatus: {
       type: String,
-      enum: [
-        "PLACED",
-        "CONFIRMED",
-        "SHIPPED",
-        "DELIVERED",
-        "CANCELLED",
-      ],
+      enum: ["PLACED", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED"],
       default: "PLACED",
     },
 
@@ -100,18 +88,31 @@ const orderSchema = new mongoose.Schema(
     },
     totalAmount: Number,
     cancellationReason: {
+      type: String,
+      default: "",
+    },
+
+    cancelledBy: {
+      type: String,
+      enum: ["USER", "ADMIN"],
+    },
+
+    paymentInfo: {
+      gateway: {
         type: String,
-        default: "",
-      },
-      
-      cancelledBy: {
-        type: String,
-        enum: ["USER", "ADMIN"],
+        enum: ["RAZORPAY"],
       },
 
-    // future payment gateway fields
-    paymentIntentId: String,
-    razorpayOrderId: String,
+      razorpayOrderId: String,
+      razorpayPaymentId: String,
+      razorpaySignature: String,
+
+      status: {
+        type: String,
+        enum: ["PENDING", "PAID", "FAILED"],
+        default: "PENDING",
+      },
+    },
   },
   {
     timestamps: true,

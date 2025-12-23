@@ -15,7 +15,7 @@ const router = express.Router();
 
 router.post("/", protect, isAdmin, addProduct);
 router.delete("/cloudinary", protect, isAdmin, deleteCloudinaryImage);
-router.get("/", protect, getAllProducts);
+router.get("/", getAllProducts);
 router.get("/:id", getProductByIdPublic);
 router.get("/:productId/related", getRelatedProducts);
 router.delete("/:id", protect, isAdmin, deleteProduct);

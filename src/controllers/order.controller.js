@@ -148,6 +148,8 @@ export const updateOrderStatus = async (req, res) => {
           },
         });
       }
+
+      order.cancelledBy = "ADMIN";
     }
 
     order.orderStatus = status;

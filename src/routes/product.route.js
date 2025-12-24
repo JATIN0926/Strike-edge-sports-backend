@@ -10,6 +10,7 @@ import {
   updateProduct,
 } from "../controllers/product.controller.js";
 import { isAdmin, protect } from "../middleware/auth.middleware.js";
+import { getAllCategories } from "../controllers/category.controller.js";
 
 const router = express.Router();
 

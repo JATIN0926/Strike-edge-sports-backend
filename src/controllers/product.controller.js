@@ -92,20 +92,28 @@ export const getAllProducts = async (req, res) => {
 
     let query = { isActive: true };
 
-    /* 🔍 Search */
     if (search) {
       const regex = new RegExp(search, "i");
       query.$or = [{ title: regex }, { grade: regex }];
     }
 
-    /* 🏏 Product Type */
     if (type !== "all") {
       query.productType = type;
     }
 
-    /* 📂 Category */
     if (category !== "all") {
-      query.category = category; // ObjectId
+      const categoryDoc = await categoryModel.findOne({
+        slug: category,
+        isActive: true,
+      });
+
+      if (!categoryDoc) {
+        return res.status(404).json({
+          message: "Category not found",
+        });
+      }
+
+      query.category = categoryDoc._id;
     }
 
     /* ↕ Sorting */
@@ -328,4 +336,3 @@ export const getProductsByCategorySlug = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch products" });
   }
 };
-

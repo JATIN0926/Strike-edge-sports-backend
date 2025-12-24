@@ -26,15 +26,21 @@ export const createCategory = async (req, res) => {
 
 export const getAllCategories = async (req, res) => {
   try {
-    const categories = await Category.find({ isActive: true }).sort({
-      createdAt: -1,
-    });
+    const categories = await Category.find({ isActive: true })
+      .select("name slug")
+      .sort({ name: 1 });
 
-    res.json(categories);
+    res.status(200).json({
+      categories,
+    });
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch categories" });
+    console.error("GET CATEGORIES ERROR:", err);
+    res.status(500).json({
+      message: "Failed to fetch categories",
+    });
   }
 };
+
 
 export const updateCategory = async (req, res) => {
   try {

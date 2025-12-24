@@ -1,4 +1,5 @@
 import Product from "../models/product.model.js";
+import User from "../models/user.model.js";
 import slugify from "slugify";
 import cloudinary from "../config/cloudinary.js";
 import categoryModel from "../models/category.model.js";
@@ -335,4 +336,34 @@ export const getProductsByCategorySlug = async (req, res) => {
     console.error("CATEGORY SLUG PRODUCTS ERROR:", err);
     res.status(500).json({ message: "Failed to fetch products" });
   }
+};
+
+export const toggleSavedProduct = async (req, res) => {
+  const userId = req.user._id;
+  const { productId } = req.params;
+
+  const user = await User.findById(userId);
+
+  const alreadySaved = user.savedProducts.includes(productId);
+
+  if (alreadySaved) {
+    user.savedProducts.pull(productId);
+  } else {
+    user.savedProducts.push(productId);
+  }
+
+  await user.save();
+
+  res.status(200).json({
+    saved: !alreadySaved,
+    savedProducts: user.savedProducts,
+  });
+};
+
+export const getSavedProducts = async (req, res) => {
+  const user = await User.findById(req.user._id).populate("savedProducts");
+
+  res.status(200).json({
+    products: user.savedProducts,
+  });
 };

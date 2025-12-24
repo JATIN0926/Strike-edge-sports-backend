@@ -89,6 +89,12 @@ const userSchema = new mongoose.Schema(
       type: [addressSchema],
       default: [],
     },
+    savedProducts: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Product",
+      },
+    ],
   },
   {
     timestamps: true,

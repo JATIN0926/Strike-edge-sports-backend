@@ -39,6 +39,17 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 
+
+// for monitor
+app.get("/api/status", (req, res) => {
+    res.status(200).json({
+      status: "ok",
+      uptime: process.uptime(),
+      timestamp: Date.now(),
+    });
+  });
+  
+
 const PORT = process.env.PORT || 5000;
 
 connectDB()

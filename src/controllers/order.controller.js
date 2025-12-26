@@ -65,10 +65,12 @@ export const createOrder = async (req, res) => {
       });
     }
 
+    // Rest of the code same...
+
     const user = await User.findById(req.user._id);
     console.log("📧 Attempting to send email...");
     console.log("To:", user.email);
-    console.log("From:", process.env.EMAIL_USER);
+    console.log("From:", process.env.SENDGRID_FROM_EMAIL);
 
     Promise.race([
       sendEmail({
@@ -76,12 +78,13 @@ export const createOrder = async (req, res) => {
         subject: `Order Confirmed - Strike Edge Sports`,
         html: orderPlacedTemplate(user.name, order.orderId),
       }),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Email timeout after 5s")), 5000)
+      new Promise(
+        (_, reject) =>
+          setTimeout(() => reject(new Error("Email timeout after 10s")), 10000) // ✅ 10s timeout
       ),
     ])
       .then((info) => {
-        console.log("✅ Email sent successfully:", info?.messageId || "sent");
+        console.log("✅ Email sent successfully via SendGrid");
       })
       .catch((err) => {
         console.error("❌ EMAIL FAILED:", {

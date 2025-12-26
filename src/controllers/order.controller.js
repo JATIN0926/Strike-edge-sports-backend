@@ -1,5 +1,8 @@
+import { sendEmail } from "../config/sendEmail.js";
+import { orderPlacedTemplate } from "../emailTemplates/orderPlaceTemplate.js";
 import Order from "../models/order.model.js";
 import Product from "../models/product.model.js";
+import User from "../models/user.model.js";
 
 /* ================= CREATE ORDER ================= */
 export const createOrder = async (req, res) => {
@@ -61,6 +64,19 @@ export const createOrder = async (req, res) => {
         },
       });
     }
+
+  
+    const user = await User.findById(req.user._id)
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: `Order Confirmed - Strike Edge Sports`,
+        html: orderPlacedTemplate(user.name, order.orderId),
+      });
+    } catch (err) {
+      console.log("EMAIL FAILED", err.message);
+    }
+    
 
     res.status(201).json({
       message: "Order placed successfully",

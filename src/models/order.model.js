@@ -53,6 +53,10 @@ const shippingAddressSchema = new mongoose.Schema(
 /* ---------- Order Schema ---------- */
 const orderSchema = new mongoose.Schema(
   {
+    orderId: {
+      type: String,
+      unique: true,
+    },
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -118,5 +122,28 @@ const orderSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+orderSchema.pre("save", async function () {
+  if (this.orderId) return;
+
+  const date = new Date();
+
+  const yyyy = date.getFullYear().toString().slice(-2);
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+
+  const dateCode = `${yyyy}${mm}${dd}`;
+
+  // Count orders created today
+  const count = await mongoose.model("Order").countDocuments({
+    createdAt: {
+      $gte: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
+    },
+  });
+
+  const sequence = String(count + 1).padStart(5, "0");
+
+  this.orderId = `SE-${dateCode}-${sequence}`;
+});
 
 export default mongoose.model("Order", orderSchema);

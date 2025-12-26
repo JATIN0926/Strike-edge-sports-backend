@@ -65,18 +65,30 @@ export const createOrder = async (req, res) => {
       });
     }
 
-  
-    const user = await User.findById(req.user._id)
-    try {
-      await sendEmail({
+    const user = await User.findById(req.user._id);
+    console.log("📧 Attempting to send email...");
+    console.log("To:", user.email);
+    console.log("From:", process.env.EMAIL_USER);
+
+    Promise.race([
+      sendEmail({
         to: user.email,
         subject: `Order Confirmed - Strike Edge Sports`,
         html: orderPlacedTemplate(user.name, order.orderId),
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Email timeout after 5s")), 5000)
+      ),
+    ])
+      .then((info) => {
+        console.log("✅ Email sent successfully:", info?.messageId || "sent");
+      })
+      .catch((err) => {
+        console.error("❌ EMAIL FAILED:", {
+          error: err.message,
+          user: user.email,
+        });
       });
-    } catch (err) {
-      console.log("EMAIL FAILED", err.message);
-    }
-    
 
     res.status(201).json({
       message: "Order placed successfully",

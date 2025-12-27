@@ -40,7 +40,6 @@ const productSchema = new mongoose.Schema(
 
     productType: {
       type: String,
-      enum: ["bat", "ball", "gloves", "pads"],
       required: true,
     },
 
@@ -48,14 +47,12 @@ const productSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
       required: true,
-      // English Willow / Kashmiri Willow
     },
 
     grade: {
       type: String,
       required: true,
       trim: true,
-      // Novice / Intermediate / Elite / Grade A / Grade A+
     },
 
     attributes: [
@@ -91,10 +88,6 @@ const productSchema = new mongoose.Schema(
   }
 );
 
-/**
- * Prevent duplicate grade under same category
- * Example: English Willow – Elite added twice ❌
- */
 productSchema.index({ category: 1, grade: 1 }, { unique: true });
 
 export default mongoose.model("Product", productSchema);

@@ -8,6 +8,7 @@ import userRoutes from "./src/routes/user.routes.js";
 import categoryRoutes from "./src/routes/category.route.js";
 import productRoutes from "./src/routes/product.route.js";
 import orderRoutes from "./src/routes/order.routes.js";
+import productTypeRoutes from "./src/routes/productType.routes.js";
 
 dotenv.config();
 
@@ -43,6 +44,7 @@ app.use("/api/user", userRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/product-types", productTypeRoutes);
 
 // for monitor
 app.get("/api/status", (req, res) => {

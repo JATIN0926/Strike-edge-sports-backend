@@ -55,7 +55,6 @@ export const createOrder = async (req, res) => {
       totalAmount,
     });
 
-    /* ---------- Reduce Stock ---------- */
     for (const item of items) {
       await Product.findByIdAndUpdate(item.productId, {
         $inc: {
@@ -64,8 +63,6 @@ export const createOrder = async (req, res) => {
         },
       });
     }
-
-    // Rest of the code same...
 
     const user = await User.findById(req.user._id);
     console.log("📧 Attempting to send email...");
@@ -111,7 +108,6 @@ export const getAllOrders = async (req, res) => {
 
     let query = {};
 
-    /* 🔍 SEARCH */
     if (search) {
       const regex = new RegExp(search, "i");
 
@@ -221,7 +217,7 @@ export const cancelOrderByUser = async (req, res) => {
       return res.status(404).json({ message: "Order not found" });
     }
 
-    if (["SHIPPED", "DELIVERED", "CANCELLED"].includes(order.orderStatus)) {
+    if (["DELIVERED", "CANCELLED"].includes(order.orderStatus)) {
       return res.status(400).json({
         message: "Order cannot be cancelled at this stage",
       });

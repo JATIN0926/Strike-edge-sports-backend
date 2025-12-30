@@ -41,7 +41,8 @@ export const googleAuth = async (req, res) => {
       .cookie("token", jwtToken, {
         httpOnly: true,
         secure: true,
-        sameSite: "none",
+        sameSite: "lax",
+        domain: ".strikedgesports.in",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       })
       .status(200)

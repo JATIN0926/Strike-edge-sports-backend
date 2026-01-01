@@ -37,12 +37,14 @@ export const googleAuth = async (req, res) => {
       { expiresIn: "7d" }
     );
 
+    const isProd = process.env.NODE_ENV === "production";
+
     res
       .cookie("token", jwtToken, {
         httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        domain: ".strikedgesports.in",
+        secure: isProd,
+        sameSite: isProd ? "none" : "lax",
+        domain: isProd ? ".strikedgesports.in" : undefined,
         maxAge: 7 * 24 * 60 * 60 * 1000,
       })
       .status(200)
@@ -64,12 +66,14 @@ export const googleAuth = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
+    const isProd = process.env.NODE_ENV === "production";
+
     res
       .clearCookie("token", {
         httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        domain: ".strikedgesports.in",
+        secure: isProd,
+        sameSite: isProd ? "none" : "lax",
+        domain: isProd ? ".strikedgesports.in" : undefined,
       })
       .status(200)
       .json({ message: "Logged out successfully" });

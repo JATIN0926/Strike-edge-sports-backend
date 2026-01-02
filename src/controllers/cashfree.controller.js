@@ -6,6 +6,11 @@ import User from "../models/user.model.js";
 import { sendEmail } from "../config/sendEmail.js";
 import { orderPlacedTemplate } from "../emailTemplates/orderPlaceTemplate.js";
 
+const CASHFREE_BASE_URL =
+  process.env.NODE_ENV === "production"
+    ? "https://api.cashfree.com"
+    : "https://sandbox.cashfree.com";
+
 /* ---------------------- CREATE CF ORDER ---------------------- */
 export const createCashfreeOrder = async (req, res) => {
   try {
@@ -44,7 +49,7 @@ export const createCashfreeOrder = async (req, res) => {
 
       subtotal: secureSubtotal,
       deliveryCharge: 0,
-      totalAmount : secureSubtotal,
+      totalAmount: secureSubtotal,
 
       orderStatus: "PLACED",
 
@@ -80,7 +85,7 @@ export const createCashfreeOrder = async (req, res) => {
     };
 
     const response = await axios.post(
-      "https://sandbox.cashfree.com/pg/orders",
+      `${CASHFREE_BASE_URL}/pg/orders`,
       payload,
       {
         headers: {
@@ -161,10 +166,14 @@ export const cashfreeWebhook = async (req, res) => {
     }
 
     // REDUCE STOCK
-    for (const item of order.items) {
-      await Product.findByIdAndUpdate(item.productId, {
-        $inc: { stock: -item.quantity, soldCount: item.quantity },
-      });
+    try {
+      for (const item of order.items) {
+        await Product.findByIdAndUpdate(item.productId, {
+          $inc: { stock: -item.quantity, soldCount: item.quantity },
+        });
+      }
+    } catch (e) {
+      console.log("Stock update failed", e);
     }
 
     // UPDATE ORDER

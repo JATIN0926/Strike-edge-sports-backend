@@ -44,15 +44,31 @@ export const createOrder = async (req, res) => {
       }
     }
 
+    const secureSubtotal = items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+
+    if (secureSubtotal !== subtotal) {
+      return res.status(400).json({
+        message: "Cart total mismatch. Please refresh page.",
+      });
+    }
+
+    const secureTotal = secureSubtotal + deliveryCharge;
+
     const order = await Order.create({
       user: req.user._id,
       items,
       shippingAddress,
       paymentMethod,
-      paymentStatus: paymentMethod === "COD" ? "PENDING" : "PAID",
-      subtotal,
+      paymentInfo: {
+        gateway: "COD",
+        status: "PENDING",
+      },
+      subtotal : secureSubtotal,
       deliveryCharge,
-      totalAmount,
+      totalAmount : secureTotal,
     });
 
     for (const item of items) {
@@ -245,5 +261,52 @@ export const cancelOrderByUser = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: "Failed to cancel order" });
+  }
+};
+
+export const getOrderByCashfreeId = async (req, res) => {
+  try {
+    const cfOrderId = req.params.id;
+
+    if (!cfOrderId) {
+      return res.status(400).json({
+        success: false,
+        message: "Cashfree order id is required",
+      });
+    }
+
+    const order = await Order.findOne({
+      "paymentInfo.cfOrderId": cfOrderId,
+    }).select("-paymentInfo"); // hide sensitive data
+
+    if (!order) {
+      return res.status(200).json({
+        success: true,
+        order: null, // webhook may still be processing
+      });
+    }
+
+    // Ensure only owner or admin can see the order
+    if (
+      order.user.toString() !== req.user._id.toString() &&
+      !req.user.isAdmin
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to view this order",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      order,
+    });
+  } catch (err) {
+    console.error("GET CF ORDER ERROR:", err);
+
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong",
+    });
   }
 };

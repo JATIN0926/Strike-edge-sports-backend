@@ -104,19 +104,18 @@ const orderSchema = new mongoose.Schema(
     paymentInfo: {
       gateway: {
         type: String,
-        enum: ["RAZORPAY"],
+      enum: ["CASHFREE", "COD"],
       },
-
-      razorpayOrderId: String,
-      razorpayPaymentId: String,
-      razorpaySignature: String,
-
+    
+      cfOrderId: String,
+      cfPaymentId: String,
       status: {
         type: String,
         enum: ["PENDING", "PAID", "FAILED"],
         default: "PENDING",
-      },
-    },
+      }
+    }
+    
   },
   {
     timestamps: true,

@@ -51,7 +51,7 @@ export const googleAuth = async (req, res) => {
       .cookie("token", jwtToken, {
         httpOnly: true,
         secure: isProd,
-        sameSite: isProd ? "none" : "lax",
+        sameSite: "none",
         domain: isProd ? ".strikedgesports.in" : undefined,
         maxAge: 7 * 24 * 60 * 60 * 1000,
       })
@@ -80,7 +80,7 @@ export const logout = async (req, res) => {
     const cookieOptions = {
       httpOnly: true,
       secure: isProd,
-      sameSite: isProd ? "none" : "lax",
+      sameSite: "none",
       path: "/",
     };
 

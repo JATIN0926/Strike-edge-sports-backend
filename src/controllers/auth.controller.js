@@ -39,7 +39,6 @@ export const googleAuth = async (req, res) => {
       });
     }
 
-    // 🔹 Create session JWT
     const jwtToken = jwt.sign(
       { id: user._id, isAdmin: user.isAdmin },
       process.env.JWT_SECRET,
@@ -48,27 +47,25 @@ export const googleAuth = async (req, res) => {
 
     const isProd = process.env.NODE_ENV === "production";
 
-    // 🔹 Set secure cookie
-    res.cookie("token", jwtToken, {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: isProd ? "none" : "lax",
-      domain: isProd ? ".strikedgesports.in" : undefined,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    // 🔹 Response
-    return res.status(200).json({
-      message: "Login successful",
-
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        photoURL: user.photoURL,
-        isAdmin: user.isAdmin,
-      },
-    });
+    res
+      .cookie("token", jwtToken, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: isProd ? "none" : "lax",
+        domain: isProd ? ".strikedgesports.in" : undefined,
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      })
+      .status(200)
+      .json({
+        message: "Login successful",
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          photoURL: user.photoURL,
+          isAdmin: user.isAdmin,
+        },
+      });
   } catch (err) {
     console.error("Google Auth Error:", err);
 
@@ -87,7 +84,6 @@ export const logout = async (req, res) => {
       path: "/",
     };
 
-    // 🔹 clear www and non-www both (Render sometimes flips)
     if (isProd) {
       res.clearCookie("token", {
         ...cookieOptions,

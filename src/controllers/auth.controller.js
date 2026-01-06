@@ -13,7 +13,6 @@ export const googleAuth = async (req, res) => {
       return res.status(400).json({ message: "Google token missing" });
     }
 
-    // 🔹 Verify Firebase token
     const decoded = await admin.auth().verifyIdToken(idToken);
 
     if (!decoded?.email) {
@@ -24,7 +23,6 @@ export const googleAuth = async (req, res) => {
     const name = decoded.name || req.body.name;
     const photoURL = decoded.picture || req.body.photoURL;
 
-    // 🔹 Find or create user
     let user = await User.findOne({ email });
 
     if (!user) {
@@ -52,7 +50,6 @@ export const googleAuth = async (req, res) => {
         httpOnly: true,
         secure: isProd,
         sameSite: "none",
-        domain: isProd ? ".strikedgesports.in" : undefined,
         maxAge: 7 * 24 * 60 * 60 * 1000,
       })
       .status(200)
@@ -87,12 +84,10 @@ export const logout = async (req, res) => {
     if (isProd) {
       res.clearCookie("token", {
         ...cookieOptions,
-        domain: ".strikedgesports.in",
       });
 
       res.clearCookie("token", {
         ...cookieOptions,
-        domain: "strikedgesports.in",
       });
     } else {
       res.clearCookie("token", cookieOptions);

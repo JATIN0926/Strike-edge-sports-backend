@@ -49,7 +49,7 @@ export const googleAuth = async (req, res) => {
       .cookie("token", jwtToken, {
         httpOnly: true,
         secure: isProd,
-        sameSite: "none",
+        sameSite: isProd ? "none" : "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       })
       .status(200)
@@ -74,24 +74,11 @@ export const logout = async (req, res) => {
   try {
     const isProd = process.env.NODE_ENV === "production";
 
-    const cookieOptions = {
+    res.clearCookie("token", {
       httpOnly: true,
       secure: isProd,
       sameSite: "none",
-      path: "/",
-    };
-
-    if (isProd) {
-      res.clearCookie("token", {
-        ...cookieOptions,
-      });
-
-      res.clearCookie("token", {
-        ...cookieOptions,
-      });
-    } else {
-      res.clearCookie("token", cookieOptions);
-    }
+    });
 
     return res.status(200).json({ message: "Logged out successfully" });
   } catch (err) {

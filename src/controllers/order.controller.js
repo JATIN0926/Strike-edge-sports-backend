@@ -66,9 +66,9 @@ export const createOrder = async (req, res) => {
         gateway: "COD",
         status: "PENDING",
       },
-      subtotal : secureSubtotal,
+      subtotal: secureSubtotal,
       deliveryCharge,
-      totalAmount : secureTotal,
+      totalAmount: secureTotal,
     });
 
     for (const item of items) {
@@ -265,48 +265,79 @@ export const cancelOrderByUser = async (req, res) => {
 };
 
 export const getOrderByCashfreeId = async (req, res) => {
+  console.log("\n==============================");
+  console.log("🔥 HIT: GET ORDER BY CASHFREE ID");
+  console.log("📩 Time:", new Date().toISOString());
+
   try {
     const cfOrderId = req.params.id;
 
+    console.log("👉 Incoming CF Order ID:", cfOrderId);
+    console.log("👉 Cookies:", req.cookies);
+    console.log("👉 Logged-in User:", req.user?._id || null);
+
     if (!cfOrderId) {
+      console.log("❌ Missing Cashfree Order ID");
       return res.status(400).json({
         success: false,
         message: "Cashfree order id is required",
       });
     }
 
+    console.log("🔍 Searching DB for order…");
+
     const order = await Order.findOne({
       "paymentInfo.cfOrderId": cfOrderId,
-    }).select("-paymentInfo"); // hide sensitive data
+    }).select("-paymentInfo");
 
     if (!order) {
+      console.log("⏳ Order NOT FOUND YET — webhook may still be processing");
       return res.status(200).json({
         success: true,
-        order: null, // webhook may still be processing
+        order: null,
       });
     }
 
-    // Ensure only owner or admin can see the order
-    if (
-      order.user.toString() !== req.user._id.toString() &&
-      !req.user.isAdmin
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized to view this order",
-      });
+    console.log("✅ ORDER FOUND IN DB");
+    console.log("🧾 Order ID:", order._id.toString());
+    console.log("👤 Order User:", order.user?.toString());
+    console.log("💳 Status:", order.paymentStatus);
+    console.log("💰 Total:", order.totalAmount);
+
+    // If user exists, verify ownership
+    if (req.user) {
+      console.log("🔐 Checking authorization…");
+
+      if (
+        order.user.toString() !== req.user._id.toString() &&
+        !req.user.isAdmin
+      ) {
+        console.log("🚫 AUTH FAILED — User not allowed");
+        return res.status(403).json({
+          success: false,
+          message: "Not authorized to view this order",
+        });
+      }
+
+      console.log("✔ AUTH OK — User allowed");
+    } else {
+      console.log("⚠ No logged-in user. Allowing access (status polling).");
     }
 
+    console.log("📤 Sending order to client…");
     return res.status(200).json({
       success: true,
       order,
     });
   } catch (err) {
-    console.error("GET CF ORDER ERROR:", err);
+    console.log("🔥🔥🔥 ERROR IN GET ORDER BY CF ID 🔥🔥🔥");
+    console.error(err);
 
     return res.status(500).json({
       success: false,
       message: "Something went wrong",
     });
+  } finally {
+    console.log("==============================\n");
   }
 };

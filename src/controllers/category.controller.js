@@ -78,7 +78,7 @@ export const deleteCategory = async (req, res) => {
   try {
     const { id } = req.params;
 
-    await Category.findByIdAndUpdate(id, { isActive: false });
+    await Category.findByIdAndDelete(id);
 
     res.json({ message: "Category deleted" });
   } catch (err) {

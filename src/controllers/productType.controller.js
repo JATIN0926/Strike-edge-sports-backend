@@ -77,7 +77,7 @@ export const deleteProductType = async (req, res) => {
   try {
     const { id } = req.params;
 
-    await ProductType.findByIdAndUpdate(id, { isActive: false });
+    await ProductType.findByIdAndDelete(id);
 
     res.json({ message: "Product type deleted" });
   } catch (err) {

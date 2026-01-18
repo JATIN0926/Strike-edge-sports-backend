@@ -50,6 +50,8 @@ export const googleAuth = async (req, res) => {
         httpOnly: true,
         secure: isProd,
         sameSite: isProd ? "none" : "lax",
+        domain: ".strikedgesports.in",
+        path: "/",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       })
       .status(200)
@@ -78,6 +80,8 @@ export const logout = async (req, res) => {
       httpOnly: true,
       secure: isProd,
       sameSite: "none",
+      domain: ".strikedgesports.in",
+      path: "/",
     });
 
     return res.status(200).json({ message: "Logged out successfully" });
